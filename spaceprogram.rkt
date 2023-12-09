@@ -34,6 +34,7 @@
 (define EARTH (circle EARTHRADIUS "solid" "light blue"))
 (define MOON (circle MOONRADIUS "solid" "light grey"))
 (define SPACECRAFT (triangle 10 "solid" "silver"))
+(define BOOM! (radial-star 8 8 16 "solid" "red"))
 
 
 ; functions
@@ -107,7 +108,8 @@
   (make-satellite (+vec (satellite-pos rkt) (satellite-vel rkt))
                   (+vec (satellite-vel rkt) (satellite-acc rkt))
                   (update-acceleration (satellite-pos rkt) ORIGIN)
-                  (satellite-image rkt)))
+                  (cond [(< (normalize (satellite-pos rkt) ORIGIN) EARTHRADIUS) BOOM!]
+                        [else (satellite-image rkt)])))
 
 ; Constellation -> Img
 ; render an image of the rocket flying around, and the orbiting moon
@@ -151,7 +153,7 @@
 ; action!
 
 (define Apollo (make-satellite (make-vector (+ (/ WIDTH 2) EARTHRADIUS) (/ HEIGHT 2) )
-                               (make-vector 0 -1.89)
+                               (make-vector 0.2 -1.8)
                                (make-vector 0 0)
                                SPACECRAFT))
 
