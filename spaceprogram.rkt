@@ -50,36 +50,7 @@
                                    ORIGIN)
               (make-vector (* (/ GRAVITY (expt (normalize (make-vector (- (/ WIDTH 2) 5) (+ (/ HEIGHT 2) 12)) ORIGIN) 3)) 5) (* (/ GRAVITY (expt (normalize (make-vector (- (/ WIDTH 2) 5) (+ (/ HEIGHT 2) 12)) ORIGIN) 3)) -12)) 1/1000000)
 (define (update-acceleration p p0)
-  (make-vector (* (/ GRAVITY (expt (normalize p p0) 3))
-                        (- (vector-x p0) (vector-x p)))
-                     (* (/ GRAVITY (expt (normalize p p0) 3))
-                        (- (vector-y p0) (vector-y p)))))
-
-; Vector, Vector -> Vector
-; a function that updates the velocity vector based on the current velocity
-;    and acceleration
-(check-expect (update-velocity (make-vector 0 0) (make-vector 10 0))
-              (make-vector 10 0))
-(check-expect (update-velocity (make-vector 0 0) (make-vector 0 10))
-              (make-vector 0 10))
-(check-expect (update-velocity (make-vector 100 200) (make-vector -5 -8))
-              (make-vector 95 192))
-(define (update-velocity v a)
-  (make-vector (+ (vector-x v) (vector-x a))
-                 (+ (vector-y v) (vector-y a))))
-
-; Vector, Vector -> Vector
-; a function that updates the position vector based on the current position
-;    and velocity
-(check-expect (update-position (make-vector 0 0) (make-vector 10 0))
-              (make-vector 10 0))
-(check-expect (update-position (make-vector 0 0) (make-vector 0 10))
-              (make-vector 0 10))
-(check-expect (update-position (make-vector 100 200) (make-vector -5 -8))
-              (make-vector 95 192))
-(define (update-position p v)
-  (make-vector (+ (vector-x p) (vector-x v))
-                 (+ (vector-y p) (vector-y v))))
+  (c*vec (/ GRAVITY (expt (normalize p p0) 3)) (-vec p0 p)))
 
 ; Vector, Vector -> Number
 ; normalizes the distance between two vectors in cartesian space
@@ -89,6 +60,30 @@
 (define (normalize p1 p2)
   (sqrt (+ (sqr (- (vector-x p1) (vector-x p2)))
            (sqr (- (vector-y p1) (vector-y p2))))))
+
+; Vector, Vector -> Vector
+; add one vector to another
+(check-expect (+vec (make-vector 12 5) (make-vector 12 5)) (make-vector 24 10))
+(check-expect (+vec (make-vector 12 5) (make-vector 0 0)) (make-vector 12 5))
+(check-expect (+vec (make-vector 0 0) (make-vector 12 5)) (make-vector 12 5))
+(define (+vec v1 v2)
+  (make-vector (+ (vector-x v1) (vector-x v2))
+               (+ (vector-y v1) (vector-y v2))))
+
+; Vector, Vector -> Vector
+; subtract one vector from another
+(check-expect (-vec (make-vector 12 5) (make-vector 12 5)) (make-vector 0 0))
+(check-expect (-vec (make-vector 12 5) (make-vector 0 0)) (make-vector 12 5))
+(check-expect (-vec (make-vector 0 0) (make-vector 12 5)) (make-vector -12 -5))
+(define (-vec v1 v2)
+  (make-vector (- (vector-x v1) (vector-x v2))
+               (- (vector-y v1) (vector-y v2))))
+
+; Number, Vector -> Vector
+(check-expect (c*vec 10 (make-vector 10 10)) (make-vector 100 100))
+; multiply a vector by a scalar
+(define (c*vec c vec)
+  (make-vector (* c (vector-x vec)) (* c (vector-y vec))))
 
 ; Constellation -> Constellation
 ; a function that updates the information for a suite of satellites
@@ -109,8 +104,8 @@
                               SPACECRAFT)
               1/100000)
 (define (update-satellite rkt)
-  (make-satellite (update-position (satellite-pos rkt) (satellite-vel rkt))
-                  (update-velocity (satellite-vel rkt) (satellite-acc rkt))
+  (make-satellite (+vec (satellite-pos rkt) (satellite-vel rkt))
+                  (+vec (satellite-vel rkt) (satellite-acc rkt))
                   (update-acceleration (satellite-pos rkt) ORIGIN)
                   (satellite-image rkt)))
 
@@ -160,10 +155,29 @@
                                (make-vector 0 0)
                                SPACECRAFT))
 
+(define V2 (make-satellite (make-vector (- (/ WIDTH 2) EARTHRADIUS) (/ HEIGHT 2) )
+                               (make-vector -1 0)
+                               (make-vector 0 0)
+                               SPACECRAFT))
+
 (define Luna (make-satellite (make-vector (/ WIDTH 2) (- (/ HEIGHT 2) 350))
                              (make-vector -0.7505 0)
                              (make-vector 0 0)
                              MOON))
-(big-bang (make-constellation Apollo Luna)
+
+
+(define V3 (update-satellite V2))
+(define V4 (update-satellite V3))
+(define V5 (update-satellite V4))
+(define V6 (update-satellite V5))
+
+V2
+V3
+V4
+V5
+V6
+
+#;
+(big-bang (make-constellation V2 Luna)
   [to-draw render]
   [on-tick update-constellation])
