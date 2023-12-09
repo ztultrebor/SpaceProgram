@@ -12,13 +12,14 @@
 ; that represents a 2D mathematical object in cartesian plane
 (define-struct vector (x y)) 
 
-; A Satellite is a make-satellite [Vector Velocity Vector Img]
+; A Satellite is a make-satellite [Vector Vector Vector Img]
 ;     a collection of vectors that represent the rocket's position,
-;          velocity and acceleration in 2D cartesian coordinates
+;          velocity and acceleration in 2D cartesian coordinates,
+;          as well as an image to display
 (define-struct satellite (pos vel acc image)) 
 
 ; A Constellation is a make-constellation [Satellite Satellite]
-;     a collection of satellites orbiting earth
+;     a collection of satellites orbiting earth (right now the spacecraft anf the moon)
 (define-struct constellation (craft moon)) 
 
 
@@ -34,10 +35,19 @@
 (define EARTH (circle EARTHRADIUS "solid" "light blue"))
 (define MOON (circle MOONRADIUS "solid" "light grey"))
 (define SPACECRAFT (triangle 10 "solid" "silver"))
-(define BOOM! (radial-star 8 8 16 "solid" "red"))
+(define BOOM! (radial-star 8 8 16 "solid" "red")) ; whoops!
 
 
 ; functions
+
+; Constellation -> Constellation
+; run the pocket universe
+(define (main stelln)
+  (big-bang stelln
+    [to-draw render]
+    [on-tick update-constellation]
+    ; [on-key impulse)) !!!
+    ))
 
 ; Vector -> Vector
 ; a function that updates the acceleration vector based on the current position
@@ -49,7 +59,12 @@
               (make-vector (* (/ GRAVITY (expt (normalize (make-vector (- (/ WIDTH 2) 5) (/ HEIGHT 2)) ORIGIN) 3)) 5) 0) 1/1000000)
 (check-within (update-acceleration (make-vector (- (/ WIDTH 2) 5) (+ (/ HEIGHT 2) 12))
                                    ORIGIN)
-              (make-vector (* (/ GRAVITY (expt (normalize (make-vector (- (/ WIDTH 2) 5) (+ (/ HEIGHT 2) 12)) ORIGIN) 3)) 5) (* (/ GRAVITY (expt (normalize (make-vector (- (/ WIDTH 2) 5) (+ (/ HEIGHT 2) 12)) ORIGIN) 3)) -12)) 1/1000000)
+              (make-vector (* (/ GRAVITY (expt (normalize
+                                                (make-vector (- (/ WIDTH 2) 5) (+ (/ HEIGHT 2) 12))
+                                                ORIGIN) 3)) 5)
+                           (* (/ GRAVITY (expt (normalize
+                                                (make-vector (- (/ WIDTH 2) 5) (+ (/ HEIGHT 2) 12))
+                                                ORIGIN) 3)) -12)) 1/1000000)
 (define (update-acceleration p p0)
   (c*vec (/ GRAVITY (expt (normalize p p0) 3)) (-vec p0 p)))
 
@@ -104,6 +119,17 @@
                               (update-acceleration (make-vector 350 300) ORIGIN)
                               SPACECRAFT)
               1/100000)
+(check-within (update-satellite (make-satellite
+                                 (+vec ORIGIN (make-vector 10 10))
+                                 (make-vector 0 20)
+                                 (make-vector 0 0)
+                                 SPACECRAFT))
+              (make-satellite (+vec ORIGIN (make-vector 10 30))
+                              (make-vector 0 20)
+                              (update-acceleration (+vec ORIGIN (make-vector 10 10))
+                                                   ORIGIN)
+                              BOOM!)
+              1/100000)
 (define (update-satellite rkt)
   (make-satellite (+vec (satellite-pos rkt) (satellite-vel rkt))
                   (+vec (satellite-vel rkt) (satellite-acc rkt))
@@ -113,6 +139,15 @@
 
 ; Constellation -> Img
 ; render an image of the rocket flying around, and the orbiting moon
+(check-expect (render (make-constellation
+                       (make-satellite ORIGIN (make-vector 0 0)
+                                       (make-vector 0 0) SPACECRAFT)
+                       (make-satellite ORIGIN (make-vector 0 0)
+                                       (make-vector 0 0) MOON)))
+              (place-image SPACECRAFT (vector-x ORIGIN) (vector-y ORIGIN)
+                           (place-image MOON (vector-x ORIGIN) (vector-y ORIGIN)
+                                        (place-image EARTH (vector-x ORIGIN)
+                                                     (vector-y ORIGIN) THEVOID)))) ; checks
 (check-expect (render (make-constellation
                        (make-satellite ORIGIN (make-vector 0 0)
                                        (make-vector 0 0) SPACECRAFT)
@@ -152,16 +187,16 @@
 
 ; action!
 
-(define Apollo (make-satellite (make-vector (+ (/ WIDTH 2) EARTHRADIUS) (/ HEIGHT 2) )
-                               (make-vector 0.2 -1.8)
-                               (make-vector 0 0)
-                               SPACECRAFT))
+(define satellites (make-constellation
+                    (make-satellite
+                     (make-vector (+ (/ WIDTH 2) EARTHRADIUS) (/ HEIGHT 2) )
+                     (make-vector 0.2 -1.8)
+                     (make-vector 0 0)
+                     SPACECRAFT)
+                    (make-satellite
+                     (make-vector (/ WIDTH 2) (- (/ HEIGHT 2) 350))
+                     (make-vector -0.75045 0)
+                     (make-vector 0 0)
+                     MOON)))
 
-(define Luna (make-satellite (make-vector (/ WIDTH 2) (- (/ HEIGHT 2) 350))
-                             (make-vector -0.7505 0)
-                             (make-vector 0 0)
-                             MOON))
-
-(big-bang (make-constellation Apollo Luna)
-  [to-draw render]
-  [on-tick update-constellation])
+(main satellites)
