@@ -54,12 +54,12 @@
 
 ; Vector, Vector -> Number
 ; normalizes the distance between two vectors in cartesian space
-(check-expect (normalize (make-vector 12 5) (make-vector 12 5)) 0)
-(check-expect (normalize (make-vector 12 5) (make-vector 0 0)) 13)
-(check-expect (normalize (make-vector 0 0) (make-vector 12 5)) 13)
+(check-within (normalize (make-vector 12 5) (make-vector 12 5)) 0 1/1000000)
+(check-within (normalize (make-vector 12 5) (make-vector 0 0)) 13 1/1000000)
+(check-within (normalize (make-vector 0 0) (make-vector 12 5)) 13 1/1000000)
 (define (normalize p1 p2)
   (sqrt (+ (sqr (- (vector-x p1) (vector-x p2)))
-           (sqr (- (vector-y p1) (vector-y p2))))))
+           (sqr (- (vector-y p1) (vector-y p2))) 1.3e-134))) ; there's some kind of crazy rounding error going on here that sometimes causes the program to virtually halt
 
 ; Vector, Vector -> Vector
 ; add one vector to another
@@ -151,12 +151,7 @@
 ; action!
 
 (define Apollo (make-satellite (make-vector (+ (/ WIDTH 2) EARTHRADIUS) (/ HEIGHT 2) )
-                               (make-vector 0 -1.88)
-                               (make-vector 0 0)
-                               SPACECRAFT))
-
-(define V2 (make-satellite (make-vector (- (/ WIDTH 2) EARTHRADIUS) (/ HEIGHT 2) )
-                               (make-vector -1 0)
+                               (make-vector 0 -1.89)
                                (make-vector 0 0)
                                SPACECRAFT))
 
@@ -165,19 +160,6 @@
                              (make-vector 0 0)
                              MOON))
 
-
-(define V3 (update-satellite V2))
-(define V4 (update-satellite V3))
-(define V5 (update-satellite V4))
-(define V6 (update-satellite V5))
-
-V2
-V3
-V4
-V5
-V6
-
-#;
-(big-bang (make-constellation V2 Luna)
+(big-bang (make-constellation Apollo Luna)
   [to-draw render]
   [on-tick update-constellation])
