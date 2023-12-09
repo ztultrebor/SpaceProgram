@@ -58,9 +58,12 @@
 ; Velocity, Acceleration -> Velocity
 ; a function that updates the velocity vector based on the current velocity
 ;    and acceleration
-; !!!
+(check-expect (update-velocity (make-velocity 0 0) (make-acceleration 10 0)) (make-velocity 10 0))
+(check-expect (update-velocity (make-velocity 0 0) (make-acceleration 0 10)) (make-velocity 0 10))
+(check-expect (update-velocity (make-velocity 100 200) (make-acceleration -5 -8)) (make-velocity 95 192))
 (define (update-velocity v a)
-  v)
+  (make-velocity (+ (velocity-x v) (acceleration-x a))
+                 (+ (velocity-y v) (acceleration-y a))))
 
 ; Position, Velocity -> Position
 ; a function that updates the position vector based on the current position
@@ -77,7 +80,8 @@
 (check-expect (update-rocket (make-rocket (make-position 0 0) (make-velocity 10 20) (make-acceleration 0 0))) (make-rocket (make-position 10 20) (make-velocity 10 20) (make-acceleration 0 0)))
 (define (update-rocket rkt)
   (make-rocket (update-position (rocket-pos rkt) (rocket-vel rkt))
-               (rocket-vel rkt) (rocket-acc rkt)))
+               (update-velocity (rocket-vel rkt) (rocket-acc rkt))
+               (rocket-acc rkt)))
 
 ; Rocket -> Img
 ; render an image of the rocket flying around
@@ -89,7 +93,7 @@
 
 ; action!
 
-(define Apollo (make-rocket ORIGIN (make-velocity 3/5 -4/5) (make-acceleration 0 0)))
+(define Apollo (make-rocket ORIGIN (make-velocity 3 -4) (make-acceleration -1/10 1/10)))
 (big-bang Apollo
   [to-draw render]
   [on-tick update-rocket])
