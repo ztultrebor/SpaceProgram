@@ -31,7 +31,7 @@
 (define EARTHRADIUS 50)
 (define MOONRADIUS 15)
 (define ORIGIN (make-vector (quotient WIDTH 2) (quotient HEIGHT 2)))
-(define GRAVITY (/ 200 2)) ;; the force of gravity
+(define GRAVITY 100) ;; the force of gravity
 (define THEVOID (empty-scene WIDTH HEIGHT "black"))
 (define MOONDIST (- (/ HEIGHT 2) (* 2 MOONRADIUS)))
 (define MOONSPEED (sqrt (/ GRAVITY MOONDIST))); stable circular orbit v is (sqrt G/r)
@@ -49,10 +49,10 @@
   ;; Constellation -> Constellation
   ;; run the pocket universe
   (big-bang stelln
-    [on-tick update-constellation 1/140]
+    [on-tick update-constellation 1/140] ; any fasted and there are rendering glitches
     [to-draw render]
     ; [on-key impulse)) !!!
-    ))
+    [stop-when finished?]))
 
 
 (define (update-constellation sats)
@@ -96,6 +96,12 @@
                                                      THEVOID))))
 
 
+(define (finished? const)
+  ;; Constellation -> Boolean
+  ;; end program if rocket crashes
+  (equal? (satellite-image (constellation-craft const)) BOOM!))
+
+
 (define (update-satellite rkt)
   ;; Satellite -> Satellite
   ;; a function that updates the rocket information
@@ -108,27 +114,19 @@
                     [else (satellite-image rkt)])))
 ;; checks
 (check-within (update-satellite (make-satellite
-                                 (make-vector 350 300)
-                                 (make-vector 0 20)
-                                 (make-vector 0 0)
-                                 SPACECRAFT))
-              (make-satellite (make-vector 350 320)
-                              (make-vector 0 20)
+                                 (make-vector 350 300) (make-vector 0 20)
+                                 (make-vector 0 0) SPACECRAFT))
+              (make-satellite (make-vector 350 320) (make-vector 0 20)
                               (update-acceleration (make-vector 350 300) ORIGIN)
-                              SPACECRAFT)
-              1e-10)
+                              SPACECRAFT) 1e-10)
 (check-within (update-satellite (make-satellite
                                  (+vec ORIGIN (make-vector 10 10))
-                                 (make-vector 0 20)
-                                 (make-vector 0 0)
+                                 (make-vector 0 20) (make-vector 0 0)
                                  SPACECRAFT))
               (make-satellite (+vec ORIGIN (make-vector 10 30))
-                              (make-vector 0 20)
-                              (update-acceleration
+                              (make-vector 0 20) (update-acceleration
                                (+vec ORIGIN (make-vector 10 10))
-                               ORIGIN)
-                              BOOM!)
-              1e-10)
+                               ORIGIN) BOOM!) 1e-10)
 
 
 (define (update-acceleration p p0)
@@ -226,6 +224,6 @@
    SPACECRAFT)
   (make-satellite
    (make-vector (/ WIDTH 2) (- (/ HEIGHT 2) MOONDIST))
-   (make-vector (- MOONSPEED) 0.00)
+   (make-vector (- MOONSPEED) 0)
    (make-vector 0 0)
    MOON)))
