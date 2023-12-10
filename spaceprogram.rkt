@@ -50,7 +50,7 @@
     [on-tick update-constellation 1/140] ;; any faster and render glitches
     [to-draw render]
     ; [on-key impulse)) !!!
-    [stop-when crashed?]))
+    [stop-when crashed? render])) ;; be sure to show explosion
 
 
 (define (update-constellation sats)
@@ -66,9 +66,7 @@
   ;; render an image of the earth, moon and rocket in glorious danse
   (image-insert
    (constellation-craft sats)
-   (cond
-     [(crashed? sats) BOOM!]
-     [else SPACECRAFT])
+   (if (crashed? sats) BOOM! SPACECRAFT)
    (image-insert
     (constellation-moon sats)
     MOON
@@ -100,7 +98,8 @@
 (define (crashed? sats)
   ;; Constellation -> Boolean
   ;; end program if rocket crashes into the earth
-  (< (normalize (-vec (satellite-pos (constellation-craft sats)) ORIGIN))
+  (< (normalize (-vec (satellite-pos (constellation-craft sats))
+                      (satellite-pos (constellation-earth sats))))
      EARTHRADIUS))
 
 
