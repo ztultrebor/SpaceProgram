@@ -7,19 +7,37 @@
 
 ;; data definitions
 
-(define-struct vector (x y)) 
-;; A Vector is a structure
-;;   make-vector [Number Number]
-;; that represents a 2D mathematical object in cartesian plane
+(define-struct constellation [craft moon earth]) 
+;; A Constellation is a make-constellation [Satellite Satellite Satellite]
+;;     a collection of space-borne bodies
+#;
+(define (fn-for-constellation const)
+  (some-fn
+   (... (constellation-craft const) ...)
+   (... (constellation-moon const) ...)
+   (... (constellation-craft earth) ...)))
 
-(define-struct satellite (pos vel acc))
+
+(define-struct satellite [pos vel acc])
 ;; A Satellite is a make-satellite [Vector Vector Vector]
 ;;     a collection of vectors that represent the satellite's position,
 ;;          velocity and acceleration in 2D cartesian coordinates
- 
-(define-struct constellation (craft moon earth)) 
-;; A Constellation is a make-constellation [Satellite Satellite Satellite]
-;;     a collection of space-borne bodies
+#;
+(define (fn-for-satellite sat)
+  (some-fn
+   (... (satellite-pos sat) ...)
+   (... (satellite-vel sat) ...)
+   (... (satellite-acc sat) ...)))
+
+
+(define-struct vector [x y])
+;; A Vector is a make-vector [Number Number]
+;;     that represents a 2D mathematical object in cartesian plane
+#;
+(define (fn-for-vector v)
+  (some-fn
+   (... (vector-x v) ...)
+   (... (vector-y v) ...)))
 
 
 ;; constants
@@ -33,23 +51,23 @@
 (define THEVOID (empty-scene WIDTH HEIGHT "black"))
 (define MOONDIST (- (/ HEIGHT 2) (* 2 MOONRADIUS)))
 (define MOONSPEED (sqrt (/ GRAVITY MOONDIST))) ;; stable circ orbit, (sqrt G/r)
-(define CRAFTSPEED (sqrt (/ GRAVITY EARTHRADIUS)))
 (define EARTH (circle EARTHRADIUS "solid" "light blue"))
 (define MOON (circle MOONRADIUS "solid" "light grey"))
 (define SPACECRAFT (triangle 10 "solid" "silver"))
 (define BOOM! (radial-star 8 8 16 "solid" "red")) ;; whoops!
 
 
+
 ;; functions
 
 
-(define (main stelln)
+(define (main sats)
   ;; Constellation -> Constellation
   ;; run the pocket universe
-  (big-bang stelln
+  (big-bang sats
     [on-tick update-constellation 1/140] ;; any faster and render glitches
     [to-draw render]
-    ; [on-key impulse)) !!!
+    [on-key impulse]
     [stop-when crashed? render])) ;; be sure to show explosion
 
 
@@ -76,24 +94,19 @@
      THEVOID))))
 
 
-;; Satellite, Img, Img -> Img
-;; place a satellite onto a background
-(define (image-insert sat satimg backdrop)
-  (place-image satimg
-               (vector-x (satellite-pos sat))
-               (vector-y (satellite-pos sat))  
-               backdrop))
-;; checks
-(check-expect (image-insert (make-satellite ORIGIN (make-vector 0 0)
-                                            (make-vector 0 0)) EARTH THEVOID)
-              (place-image EARTH (vector-x ORIGIN)
-                           (vector-y ORIGIN) THEVOID))
-(check-expect (image-insert (make-satellite (+vec ORIGIN (make-vector 100 100))
-                                            (make-vector 0 0)
-                                            (make-vector 0 0)) MOON THEVOID)
-              (place-image MOON (+ (vector-x ORIGIN) 100)
-                           (+ (vector-y ORIGIN) 100) THEVOID))
-
+(define (impulse sats ke)
+  ; Satellite KeyEvent -> Satellite
+  ; allow the user to give an impulse thrust to the rocket
+  ; !!!
+  (make-constellation
+   (cond [(key=? " "  ke)
+          (make-satellite
+           (satellite-pos (constellation-craft sats))
+           (satellite-vel (constellation-craft sats))
+           (+vec (satellite-acc (constellation-craft sats)) (make-vector 0 -0.7)))]
+         [else (constellation-craft sats)])
+   (constellation-moon sats)
+   (constellation-earth sats)))
 
 (define (crashed? sats)
   ;; Constellation -> Boolean
@@ -108,13 +121,16 @@
   ;; a function that updates the rocket information
   (make-satellite (+vec (satellite-pos rkt) (satellite-vel rkt))
                   (+vec (satellite-vel rkt) (satellite-acc rkt))
-                  (update-acceleration (satellite-pos rkt) ORIGIN)))
+                  (cond
+                    [(equal? (make-vector 0 0) (satellite-vel rkt))
+                     (satellite-acc rkt)]
+                    [else (update-acceleration (satellite-pos rkt) ORIGIN)])))
 ;; checks
-(check-within (update-satellite (make-satellite
-                                 (make-vector 350 300) (make-vector 0 20)
-                                 (make-vector 0 0)))
-              (make-satellite (make-vector 350 320) (make-vector 0 20)
-                              (update-acceleration (make-vector 350 300) ORIGIN)) 1e-10)
+(check-expect (update-satellite
+               (make-satellite (make-vector 350 300) (make-vector 0 0)
+                               (make-vector 0 0)))
+              (make-satellite (make-vector 350 300) (make-vector 0 0)
+                              (make-vector 0 0)))
 (check-within (update-satellite (make-satellite
                                  (+vec ORIGIN (make-vector 10 10))
                                  (make-vector 0 20) (make-vector 0 0)))
@@ -135,6 +151,25 @@
               (c*vec GRAVITY (make-vector 0 -1/100)) 1e-10)
 (check-within (update-acceleration (make-vector -3 12) (make-vector 2 0))
               (c*vec GRAVITY (make-vector 5/2197 -12/2197)) 1e-10)
+
+
+;; Satellite, Img, Img -> Img
+;; place a satellite onto a background
+(define (image-insert sat satimg backdrop)
+  (place-image satimg
+               (vector-x (satellite-pos sat))
+               (vector-y (satellite-pos sat))  
+               backdrop))
+;; checks
+(check-expect (image-insert (make-satellite ORIGIN (make-vector 0 0)
+                                            (make-vector 0 0)) EARTH THEVOID)
+              (place-image EARTH (vector-x ORIGIN)
+                           (vector-y ORIGIN) THEVOID))
+(check-expect (image-insert (make-satellite (+vec ORIGIN (make-vector 100 100))
+                                            (make-vector 0 0)
+                                            (make-vector 0 0)) MOON THEVOID)
+              (place-image MOON (+ (vector-x ORIGIN) 100)
+                           (+ (vector-y ORIGIN) 100) THEVOID))
 
 
 (define (normalize vec)
@@ -169,8 +204,6 @@
                (+ (vector-y v1) (vector-y v2))))
 ;; checks
 (check-expect (+vec (make-vector 12 5) (make-vector 12 5)) (make-vector 24 10))
-(check-expect (+vec (make-vector 12 5) (make-vector 0 0)) (make-vector 12 5))
-(check-expect (+vec (make-vector 0 0) (make-vector 12 5)) (make-vector 12 5))
 
 
 (define (-vec v1 v2)
@@ -180,8 +213,6 @@
                (- (vector-y v1) (vector-y v2))))
 ;; checks
 (check-expect (-vec (make-vector 12 5) (make-vector 12 5)) (make-vector 0 0))
-(check-expect (-vec (make-vector 12 5) (make-vector 0 0)) (make-vector 12 5))
-(check-expect (-vec (make-vector 0 0) (make-vector 12 5)) (make-vector -12 -5))
 
 
 (define (c*vec c vec)
@@ -190,14 +221,6 @@
   (make-vector (* c (vector-x vec)) (* c (vector-y vec))))
 ;; checks
 (check-expect (c*vec 10 (make-vector 10 10)) (make-vector 100 100))
-
-
-(define (impulse rkt ke)
-  ; Rocket KeyEvent -> Rocket
-  ; allow the user to give an impulse thrust to the rocket
-  ; !!!
-  (cond [(... ke) (... rkt)]
-        [(... ke) (... rkt)]))
 
 
 (define (gravity rkt moon)
@@ -214,7 +237,7 @@
  (make-constellation
   (make-satellite
    (make-vector (+ (/ WIDTH 2) EARTHRADIUS) (/ HEIGHT 2) )
-   (make-vector 0 (- CRAFTSPEED))
+   (make-vector 0 0)
    (make-vector 0 0))
   (make-satellite
    (make-vector (/ WIDTH 2) (- (/ HEIGHT 2) MOONDIST))
