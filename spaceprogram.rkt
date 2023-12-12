@@ -9,7 +9,7 @@
 
 (define-struct constellation [craft moon earth]) 
 ;; A Constellation is a make-constellation [Satellite Satellite Satellite]
-;;     a collection of space-borne bodies
+;;     a collection of space-borne bodies; craft, moon and earth
 #;
 (define (fn-for-constellation const)
   (some-fn
@@ -110,7 +110,7 @@
            (satellite-pos (constellation-craft sats))
            (satellite-vel (constellation-craft sats))
            (+vec (satellite-acc (constellation-craft sats))
-                 (make-vector 0 -0.59)))]
+                 (make-vector 0 -0.84)))]
          [else (constellation-craft sats)])
    (constellation-moon sats)
    (constellation-earth sats)))
@@ -286,5 +286,5 @@
    (make-vector 0 0))
   (make-satellite
    ORIGIN
-   (make-vector 0 0)
+   (make-vector 0 -1e-10)
    (make-vector 0 0))))
