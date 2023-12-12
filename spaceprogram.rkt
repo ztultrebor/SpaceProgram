@@ -48,7 +48,7 @@
 (define MOONRADIUS 15)
 (define ORIGIN (make-vector (quotient WIDTH 2) (quotient HEIGHT 2)))
 (define EARTHGRAVITY 100)  ;; grav field strength due to earth mass
-(define MOONGRAVITY 10) ;; grav field strength due to moon mass
+(define MOONGRAVITY (* 0.0123 EARTHGRAVITY)) ;; grav field strength due to moon mass
 (define THEVOID (empty-scene WIDTH HEIGHT "black"))
 (define MOONDIST (- (/ HEIGHT 2) (* 2 MOONRADIUS)))
 (define MOONSPEED (sqrt (/ EARTHGRAVITY MOONDIST))) ;; stable circ orbit, (sqrt G/r)
@@ -58,13 +58,14 @@
                      (list (make-posn 0 0)  (make-posn 8 4)
                            (make-posn 0 -24) (make-posn -8 4))
            "solid" "red"))
-(define BOOM! (radial-star 8 8 16 "solid" "red")) ;; whoops!
-(define VICTORY! (underlay
-   (rectangle 32 32 "solid" "mediumseagreen")
-   (polygon
-    (list (make-posn 0 0) (make-posn 20 0) (make-posn 0 20) (make-posn 20 20))
-    "outline"
-    (make-pen "darkslategray" 4 "solid" "round" "round"))))
+(define BOOM! (overlay
+               (radial-star 16 8 16 "solid" "orange")
+               (radial-star 8 12 24 "solid" "red"))) ;; whoops!
+(define VICTORY!
+  (overlay (circle 2 "solid" "black") (circle 4 "solid" "red")
+           (circle 6 "solid" "black") (circle 8 "solid" "red")
+           (circle 10 "solid" "black") (circle 12 "solid" "red")))
+
 
 
 
