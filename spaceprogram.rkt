@@ -54,8 +54,17 @@
 (define MOONSPEED (sqrt (/ EARTHGRAVITY MOONDIST))) ;; stable circ orbit, (sqrt G/r)
 (define EARTH (circle EARTHRADIUS "solid" "light blue"))
 (define MOON (circle MOONRADIUS "solid" "light grey"))
-(define SPACECRAFT (triangle 10 "solid" "silver"))
+(define SPACECRAFT  (polygon
+                     (list (make-posn 0 0)  (make-posn 8 4)
+                           (make-posn 0 -24) (make-posn -8 4))
+           "solid" "red"))
 (define BOOM! (radial-star 8 8 16 "solid" "red")) ;; whoops!
+(define VICTORY! (underlay
+   (rectangle 32 32 "solid" "mediumseagreen")
+   (polygon
+    (list (make-posn 0 0) (make-posn 20 0) (make-posn 0 20) (make-posn 20 20))
+    "outline"
+    (make-pen "darkslategray" 4 "solid" "round" "round"))))
 
 
 
@@ -69,7 +78,7 @@
     [on-tick update-constellation] ;; any faster and render glitches
     [to-draw render]
     [on-key impulse]
-    [stop-when crashed? render])) ;; be sure to show explosion
+    [stop-when landed-or-crashed? render])) ;; be sure to show explosion
 
 
 (define (update-constellation sats)
@@ -91,7 +100,12 @@
   ;; render an image of the earth, moon and rocket in glorious danse
   (image-insert
    (constellation-craft sats)
-   (if (crashed? sats) BOOM! SPACECRAFT)
+   (cond
+     [(not (landed-or-crashed? sats)) SPACECRAFT]
+     [(< (normalize (-vec (satellite-pos (constellation-craft sats))
+                      (satellite-pos (constellation-earth sats))))
+     EARTHRADIUS) BOOM!]
+      [else VICTORY!])
    (image-insert
     (constellation-moon sats)
     MOON
@@ -116,12 +130,15 @@
    (constellation-earth sats)))
 
 
-(define (crashed? sats)
+(define (landed-or-crashed? sats)
   ;; Constellation -> Boolean
-  ;; end program if rocket crashes into the earth
-  (< (normalize (-vec (satellite-pos (constellation-craft sats))
+  ;; end program if rocket crashes into the earth or lands/crashes on the moon
+  (or (< (normalize (-vec (satellite-pos (constellation-craft sats))
                       (satellite-pos (constellation-earth sats))))
-     EARTHRADIUS))
+     EARTHRADIUS)
+      (< (normalize (-vec (satellite-pos (constellation-craft sats))
+                      (satellite-pos (constellation-moon sats))))
+     MOONRADIUS)))
 
 
 (define (update-satellite sat moon earth)
