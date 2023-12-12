@@ -44,7 +44,7 @@
 
 (define WIDTH 1400)
 (define HEIGHT 750)
-(define EARTHRADIUS 50)
+(define EARTHRADIUS 30)
 (define MOONRADIUS 15)
 (define ORIGIN (make-vector (quotient WIDTH 2) (quotient HEIGHT 2)))
 (define EARTHGRAVITY 100)  ;; grav field strength due to earth mass
@@ -110,7 +110,7 @@
            (satellite-pos (constellation-craft sats))
            (satellite-vel (constellation-craft sats))
            (+vec (satellite-acc (constellation-craft sats))
-                 (make-vector 0 -0.6769)))]
+                 (make-vector 0 -0.59)))]
          [else (constellation-craft sats)])
    (constellation-moon sats)
    (constellation-earth sats)))
@@ -133,14 +133,10 @@
                     [(equal? (make-vector 0 0) (satellite-vel sat))
                      (satellite-acc sat)]
                     [else (+vec
-                           (update-acceleration
-                            EARTHGRAVITY
-                            (satellite-pos sat)
-                            (satellite-pos earth))
-                           (update-acceleration
-                            MOONGRAVITY
-                            (satellite-pos sat)
-                            (satellite-pos moon)))])))
+                           (update-acceleration EARTHGRAVITY
+                            (satellite-pos sat) (satellite-pos earth))
+                           (update-acceleration MOONGRAVITY
+                            (satellite-pos sat) (satellite-pos moon)))])))
 ;; checks
 (check-expect (update-satellite
                (make-satellite (make-vector 380 300) (make-vector 0 0)
@@ -160,14 +156,11 @@
                                (make-vector 0 0)))
               (make-satellite (make-vector 420 300) (make-vector 40 0)
                               (+vec
-                               (update-acceleration
-                                EARTHGRAVITY
-                                (make-vector 380 300)
-                                (make-vector 350 300))
-                               (update-acceleration
-                                MOONGRAVITY
-                                (make-vector 380 300)
-                                (make-vector 700 300)))) 1e-8)
+                               (update-acceleration EARTHGRAVITY
+                                (make-vector 380 300) (make-vector 350 300))
+                               (update-acceleration MOONGRAVITY
+                                (make-vector 380 300) (make-vector 700 300))))
+              1e-8)
 (check-within (update-satellite
                (make-satellite (make-vector 700 300) (make-vector 10 0)
                                (make-vector 0 0))
@@ -176,10 +169,9 @@
                (make-satellite (make-vector 350 300) (make-vector 1 1)
                                (make-vector 0 0)))
               (make-satellite (make-vector 710 300) (make-vector 10 0)
-                              (update-acceleration
-                               EARTHGRAVITY
-                               (make-vector 700 300)
-                               (make-vector 350 300))) 1e-8)
+                              (update-acceleration EARTHGRAVITY
+                               (make-vector 700 300) (make-vector 350 300)))
+              1e-8)
 (check-within (update-satellite
                (make-satellite (make-vector 350 300) (make-vector 1 1)
                                (make-vector 0 0))
@@ -188,10 +180,9 @@
                (make-satellite (make-vector 350 300) (make-vector 1 1)
                                (make-vector 0 0)))
               (make-satellite (make-vector 351 301) (make-vector 1 1)
-                              (update-acceleration
-                               MOONGRAVITY
-                               (make-vector 350 300)
-                               (make-vector 700 300))) 1e-8)
+                              (update-acceleration  MOONGRAVITY
+                               (make-vector 350 300) (make-vector 700 300)))
+              1e-8)
 
 
 (define (update-acceleration gravity p p0)
