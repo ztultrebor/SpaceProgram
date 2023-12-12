@@ -47,10 +47,11 @@
 (define EARTHRADIUS 50)
 (define MOONRADIUS 15)
 (define ORIGIN (make-vector (quotient WIDTH 2) (quotient HEIGHT 2)))
-(define GRAVITY 100) ;; the force of gravity
+(define EARTHGRAVITY 100)  ;; grav field strength due to earth mass
+(define MOONGRAVITY 10) ;; grav field strength due to moon mass
 (define THEVOID (empty-scene WIDTH HEIGHT "black"))
 (define MOONDIST (- (/ HEIGHT 2) (* 2 MOONRADIUS)))
-(define MOONSPEED (sqrt (/ GRAVITY MOONDIST))) ;; stable circ orbit, (sqrt G/r)
+(define MOONSPEED (sqrt (/ EARTHGRAVITY MOONDIST))) ;; stable circ orbit, (sqrt G/r)
 (define EARTH (circle EARTHRADIUS "solid" "light blue"))
 (define MOON (circle MOONRADIUS "solid" "light grey"))
 (define SPACECRAFT (triangle 10 "solid" "silver"))
@@ -65,7 +66,7 @@
   ;; Constellation -> Constellation
   ;; run the pocket universe
   (big-bang sats
-    [on-tick update-constellation 1/140] ;; any faster and render glitches
+    [on-tick update-constellation] ;; any faster and render glitches
     [to-draw render]
     [on-key impulse]
     [stop-when crashed? render])) ;; be sure to show explosion
@@ -74,9 +75,15 @@
 (define (update-constellation sats)
   ;; Constellation -> Constellation
   ;; a function that updates the information for a suite of satellites
-  (make-constellation (update-satellite (constellation-craft sats))
-                      (update-satellite (constellation-moon sats))
-                      (constellation-earth sats)))
+  (make-constellation (update-satellite (constellation-craft sats)
+                                        (constellation-moon sats)
+                                        (constellation-earth sats))
+                      (update-satellite (constellation-moon sats)
+                                        (constellation-moon sats)
+                                        (constellation-earth sats))
+                      (update-satellite (constellation-earth sats)
+                                        (constellation-moon sats)
+                                        (constellation-earth sats))))
 
 
 (define (render sats)
@@ -97,16 +104,17 @@
 (define (impulse sats ke)
   ; Satellite KeyEvent -> Satellite
   ; allow the user to give an impulse thrust to the rocket
-  ; !!!
   (make-constellation
    (cond [(key=? " "  ke)
           (make-satellite
            (satellite-pos (constellation-craft sats))
            (satellite-vel (constellation-craft sats))
-           (+vec (satellite-acc (constellation-craft sats)) (make-vector 0 -0.7)))]
+           (+vec (satellite-acc (constellation-craft sats))
+                 (make-vector 0 -0.6769)))]
          [else (constellation-craft sats)])
    (constellation-moon sats)
    (constellation-earth sats)))
+
 
 (define (crashed? sats)
   ;; Constellation -> Boolean
@@ -116,41 +124,83 @@
      EARTHRADIUS))
 
 
-(define (update-satellite rkt)
-  ;; Satellite -> Satellite
+(define (update-satellite sat moon earth)
+  ;; Satellite, Constellation -> Satellite
   ;; a function that updates the rocket information
-  (make-satellite (+vec (satellite-pos rkt) (satellite-vel rkt))
-                  (+vec (satellite-vel rkt) (satellite-acc rkt))
+  (make-satellite (+vec (satellite-pos sat) (satellite-vel sat))
+                  (+vec (satellite-vel sat) (satellite-acc sat))
                   (cond
-                    [(equal? (make-vector 0 0) (satellite-vel rkt))
-                     (satellite-acc rkt)]
-                    [else (update-acceleration (satellite-pos rkt) ORIGIN)])))
+                    [(equal? (make-vector 0 0) (satellite-vel sat))
+                     (satellite-acc sat)]
+                    [else (+vec
+                           (update-acceleration
+                            EARTHGRAVITY
+                            (satellite-pos sat)
+                            (satellite-pos earth))
+                           (update-acceleration
+                            MOONGRAVITY
+                            (satellite-pos sat)
+                            (satellite-pos moon)))])))
 ;; checks
 (check-expect (update-satellite
-               (make-satellite (make-vector 350 300) (make-vector 0 0)
+               (make-satellite (make-vector 380 300) (make-vector 0 0)
+                               (make-vector 0 0))
+               (make-satellite (make-vector 700 300) (make-vector 10 0)
+                               (make-vector 0 0))
+               (make-satellite (make-vector 350 300) (make-vector 1 1)
                                (make-vector 0 0)))
-              (make-satellite (make-vector 350 300) (make-vector 0 0)
+              (make-satellite (make-vector 380 300) (make-vector 0 0)
                               (make-vector 0 0)))
-(check-within (update-satellite (make-satellite
-                                 (+vec ORIGIN (make-vector 10 10))
-                                 (make-vector 0 20) (make-vector 0 0)))
-              (make-satellite (+vec ORIGIN (make-vector 10 30))
-                              (make-vector 0 20) (update-acceleration
-                                                  (+vec ORIGIN (make-vector 10 10))
-                                                  ORIGIN)) 1e-10)
+(check-within (update-satellite
+               (make-satellite (make-vector 380 300) (make-vector 40 0)
+                               (make-vector 0 0))
+               (make-satellite (make-vector 700 300) (make-vector 10 0)
+                               (make-vector 0 0))
+               (make-satellite (make-vector 350 300) (make-vector 1 1)
+                               (make-vector 0 0)))
+              (make-satellite (make-vector 420 300) (make-vector 40 0)
+                              (+vec
+                               (update-acceleration
+                                EARTHGRAVITY
+                                (make-vector 380 300)
+                                (make-vector 350 300))
+                               (update-acceleration
+                                MOONGRAVITY
+                                (make-vector 380 300)
+                                (make-vector 700 300)))) 1e-8)
+(check-within (update-satellite
+               (make-satellite (make-vector 700 300) (make-vector 10 0)
+                               (make-vector 0 0))
+               (make-satellite (make-vector 700 300) (make-vector 10 0)
+                               (make-vector 0 0))
+               (make-satellite (make-vector 350 300) (make-vector 1 1)
+                               (make-vector 0 0)))
+              (make-satellite (make-vector 710 300) (make-vector 10 0)
+                              (update-acceleration
+                               EARTHGRAVITY
+                               (make-vector 700 300)
+                               (make-vector 350 300))) 1e-8)
+(check-within (update-satellite
+               (make-satellite (make-vector 350 300) (make-vector 1 1)
+                               (make-vector 0 0))
+               (make-satellite (make-vector 700 300) (make-vector 10 0)
+                               (make-vector 0 0))
+               (make-satellite (make-vector 350 300) (make-vector 1 1)
+                               (make-vector 0 0)))
+              (make-satellite (make-vector 351 301) (make-vector 1 1)
+                              (update-acceleration
+                               MOONGRAVITY
+                               (make-vector 350 300)
+                               (make-vector 700 300))) 1e-8)
 
 
-(define (update-acceleration p p0)
+(define (update-acceleration gravity p p0)
   ;; Vector -> Vector
   ;; a function that updates acceleration vector based on current position
-  (c*vec GRAVITY (inverse-sqr (-vec p0 p))))
+  (c*vec gravity (inverse-sqr (-vec p0 p))))
 ;; checks
-(check-within (update-acceleration (make-vector 10 0) (make-vector 0 0))
-              (c*vec GRAVITY (make-vector -1/100 0)) 1e-10)
-(check-within (update-acceleration (make-vector 0 5) (make-vector 0 -5))
-              (c*vec GRAVITY (make-vector 0 -1/100)) 1e-10)
-(check-within (update-acceleration (make-vector -3 12) (make-vector 2 0))
-              (c*vec GRAVITY (make-vector 5/2197 -12/2197)) 1e-10)
+(check-within (update-acceleration EARTHGRAVITY (make-vector 10 0) (make-vector 0 0))
+              (c*vec EARTHGRAVITY (make-vector -1/100 0)) 1e-8)
 
 
 ;; Satellite, Img, Img -> Img
