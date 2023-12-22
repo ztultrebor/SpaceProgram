@@ -1,6 +1,6 @@
 ;; The first three lines of this file were inserted by DrRacket. They record metadata
 ;; about the language level of this file in a form that our tools can easily process.
-#reader(lib "htdp-beginner-reader.ss" "lang")((modname spaceprogram) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #f)))
+#reader(lib "htdp-beginner-abbr-reader.ss" "lang")((modname spaceprogram) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #f)))
 (require 2htdp/image)
 (require 2htdp/universe)
 
@@ -52,12 +52,12 @@
 (define THEVOID (empty-scene WIDTH HEIGHT "black"))
 (define MOONDIST (- (/ HEIGHT 2) (* 2 MOONRADIUS)))
 (define MOONSPEED (sqrt (/ EARTHGRAVITY MOONDIST))) ;; stable circ orbit, (sqrt G/r)
-(define EARTH (circle EARTHRADIUS "solid" "light blue"))
-(define MOON (circle MOONRADIUS "solid" "light grey"))
+(define EARTH (circle EARTHRADIUS "solid" "blue"))
+(define MOON (circle MOONRADIUS "solid" "grey"))
 (define SPACECRAFT  (polygon
-                     (list (make-posn 0 0)  (make-posn 8 4)
-                           (make-posn 0 -24) (make-posn -8 4))
-           "solid" "red"))
+                     (list (make-posn 0 0)  (make-posn 6 3)
+                           (make-posn 0 -18) (make-posn -6 3))
+                     "solid" "red"))
 (define BOOM! (overlay
                (radial-star 16 8 16 "solid" "orange")
                (radial-star 8 12 24 "solid" "red"))) ;; whoops!
@@ -79,7 +79,7 @@
     [on-tick update-constellation] ;; any faster and render glitches
     [to-draw render]
     [on-key impulse]
-    [stop-when landed-or-crashed? render])) ;; be sure to show explosion
+    [stop-when landed-or-crashed? render]))
 
 
 (define (update-constellation sats)
@@ -104,9 +104,15 @@
    (cond
      [(not (landed-or-crashed? sats)) SPACECRAFT]
      [(< (normalize (-vec (satellite-pos (constellation-craft sats))
-                      (satellite-pos (constellation-earth sats))))
-     EARTHRADIUS) BOOM!]
-      [else VICTORY!])
+                          (satellite-pos (constellation-earth sats))))
+         EARTHRADIUS) BOOM!]
+     [(and (< (normalize (-vec (satellite-pos (constellation-craft sats))
+                               (satellite-pos (constellation-moon sats))))
+              MOONRADIUS)
+           (> (normalize (-vec (satellite-vel (constellation-craft sats))
+                               (satellite-vel (constellation-moon sats))))
+              2/3)) BOOM!]
+     [else VICTORY!])
    (image-insert
     (constellation-moon sats)
     MOON
@@ -135,11 +141,11 @@
   ;; Constellation -> Boolean
   ;; end program if rocket crashes into the earth or lands/crashes on the moon
   (or (< (normalize (-vec (satellite-pos (constellation-craft sats))
-                      (satellite-pos (constellation-earth sats))))
-     EARTHRADIUS)
+                          (satellite-pos (constellation-earth sats))))
+         EARTHRADIUS)
       (< (normalize (-vec (satellite-pos (constellation-craft sats))
-                      (satellite-pos (constellation-moon sats))))
-     MOONRADIUS)))
+                          (satellite-pos (constellation-moon sats))))
+         MOONRADIUS)))
 
 
 (define (update-satellite sat moon earth)
@@ -152,9 +158,9 @@
                      (satellite-acc sat)]
                     [else (+vec
                            (update-acceleration EARTHGRAVITY
-                            (satellite-pos sat) (satellite-pos earth))
+                                                (satellite-pos sat) (satellite-pos earth))
                            (update-acceleration MOONGRAVITY
-                            (satellite-pos sat) (satellite-pos moon)))])))
+                                                (satellite-pos sat) (satellite-pos moon)))])))
 ;; checks
 (check-expect (update-satellite
                (make-satellite (make-vector 380 300) (make-vector 0 0)
@@ -175,9 +181,9 @@
               (make-satellite (make-vector 420 300) (make-vector 40 0)
                               (+vec
                                (update-acceleration EARTHGRAVITY
-                                (make-vector 380 300) (make-vector 350 300))
+                                                    (make-vector 380 300) (make-vector 350 300))
                                (update-acceleration MOONGRAVITY
-                                (make-vector 380 300) (make-vector 700 300))))
+                                                    (make-vector 380 300) (make-vector 700 300))))
               1e-8)
 (check-within (update-satellite
                (make-satellite (make-vector 700 300) (make-vector 10 0)
@@ -188,7 +194,7 @@
                                (make-vector 0 0)))
               (make-satellite (make-vector 710 300) (make-vector 10 0)
                               (update-acceleration EARTHGRAVITY
-                               (make-vector 700 300) (make-vector 350 300)))
+                                                   (make-vector 700 300) (make-vector 350 300)))
               1e-8)
 (check-within (update-satellite
                (make-satellite (make-vector 350 300) (make-vector 1 1)
@@ -199,7 +205,7 @@
                                (make-vector 0 0)))
               (make-satellite (make-vector 351 301) (make-vector 1 1)
                               (update-acceleration  MOONGRAVITY
-                               (make-vector 350 300) (make-vector 700 300)))
+                                                    (make-vector 350 300) (make-vector 700 300)))
               1e-8)
 
 
@@ -290,7 +296,13 @@
 
 
 
+; !!!
+; some function to allow crashes on the moon on too-fast approach
+
+
+
 ;; action!
+
 
 (main
  (make-constellation
