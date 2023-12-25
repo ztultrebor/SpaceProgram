@@ -1,6 +1,6 @@
 ;; The first three lines of this file were inserted by DrRacket. They record metadata
 ;; about the language level of this file in a form that our tools can easily process.
-#reader(lib "htdp-beginner-abbr-reader.ss" "lang")((modname spaceprogram) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #f)))
+#reader(lib "htdp-intermediate-reader.ss" "lang")((modname spaceprogram) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #f)))
 (require 2htdp/image)
 (require 2htdp/universe)
 
@@ -158,9 +158,11 @@
                      (satellite-acc sat)]
                     [else (+vec
                            (update-acceleration EARTHGRAVITY
-                                                (satellite-pos sat) (satellite-pos earth))
+                                                (satellite-pos sat)
+                                                (satellite-pos earth))
                            (update-acceleration MOONGRAVITY
-                                                (satellite-pos sat) (satellite-pos moon)))])))
+                                                (satellite-pos sat)
+                                                (satellite-pos moon)))])))
 ;; checks
 (check-expect (update-satellite
                (make-satellite (make-vector 380 300) (make-vector 0 0)
@@ -194,7 +196,8 @@
                                (make-vector 0 0)))
               (make-satellite (make-vector 710 300) (make-vector 10 0)
                               (update-acceleration EARTHGRAVITY
-                                                   (make-vector 700 300) (make-vector 350 300)))
+                                                   (make-vector 700 300)
+                                                   (make-vector 350 300)))
               1e-8)
 (check-within (update-satellite
                (make-satellite (make-vector 350 300) (make-vector 1 1)
@@ -205,7 +208,8 @@
                                (make-vector 0 0)))
               (make-satellite (make-vector 351 301) (make-vector 1 1)
                               (update-acceleration  MOONGRAVITY
-                                                    (make-vector 350 300) (make-vector 700 300)))
+                                                    (make-vector 350 300)
+                                                    (make-vector 700 300)))
               1e-8)
 
 
@@ -214,7 +218,8 @@
   ;; a function that updates acceleration vector based on current position
   (c*vec gravity (inverse-sqr (-vec p0 p))))
 ;; checks
-(check-within (update-acceleration EARTHGRAVITY (make-vector 10 0) (make-vector 0 0))
+(check-within (update-acceleration EARTHGRAVITY (make-vector 10 0)
+                                   (make-vector 0 0))
               (c*vec EARTHGRAVITY (make-vector -1/100 0)) 1e-8)
 
 
@@ -262,11 +267,17 @@
 (check-within (inverse-sqr (make-vector 10 0)) (make-vector 1/100 0) 1e-10)
 
 
+(define (vector-arithmetic f v1 v2)
+  ;; [Number -> Number] Vector Vector -> Vector
+  ;; combine the vector components according to the rules of f
+  (make-vector (f (vector-x v1) (vector-x v2))
+               (f (vector-y v1) (vector-y v2))))
+
+
 (define (+vec v1 v2)
   ;; Vector, Vector -> Vector
-  ;; add one vector to another
-  (make-vector (+ (vector-x v1) (vector-x v2))
-               (+ (vector-y v1) (vector-y v2))))
+  ;; subtract one vector from another
+  (vector-arithmetic + v1 v2))
 ;; checks
 (check-expect (+vec (make-vector 12 5) (make-vector 12 5)) (make-vector 24 10))
 
@@ -274,8 +285,7 @@
 (define (-vec v1 v2)
   ;; Vector, Vector -> Vector
   ;; subtract one vector from another
-  (make-vector (- (vector-x v1) (vector-x v2))
-               (- (vector-y v1) (vector-y v2))))
+  (vector-arithmetic - v1 v2))
 ;; checks
 (check-expect (-vec (make-vector 12 5) (make-vector 12 5)) (make-vector 0 0))
 
@@ -293,11 +303,6 @@
   ; account for gravitational effects of the moon
   ; !!!
   (satellite-acc rkt))
-
-
-
-; !!!
-; some function to allow crashes on the moon on too-fast approach
 
 
 
