@@ -257,11 +257,11 @@
 (define (inverse-sqr vec)
   ;; Vector -> Vector
   ;; calculates the inverse square of a vector, useful for physics
-  (c*vec (/ 1 (sqrt (+ (* 1 (expt (vector-x vec) 6) (expt (vector-y vec) 0))
+  (c*vec (/ 1 (sqrt (+ (     expt (vector-x vec) 6)
                        (* 3 (expt (vector-x vec) 4) (expt (vector-y vec) 2))
                        (* 3 (expt (vector-x vec) 2) (expt (vector-y vec) 4))
-                       (* 1 (expt (vector-x vec) 0) (expt (vector-y vec) 6))
-                       1e-120))) ;; some bug in finding the roots of numbers?
+                       (                             expt (vector-y vec) 6)
+                       1e-120)))
          vec)) 
 ;; checks
 (check-within (inverse-sqr (make-vector 10 0)) (make-vector 1/100 0) 1e-10)
@@ -276,7 +276,7 @@
 
 (define (+vec v1 v2)
   ;; Vector, Vector -> Vector
-  ;; subtract one vector from another
+  ;; add one vector to another
   (vector-arithmetic + v1 v2))
 ;; checks
 (check-expect (+vec (make-vector 12 5) (make-vector 12 5)) (make-vector 24 10))
@@ -296,13 +296,6 @@
   (make-vector (* c (vector-x vec)) (* c (vector-y vec))))
 ;; checks
 (check-expect (c*vec 10 (make-vector 10 10)) (make-vector 100 100))
-
-
-(define (gravity rkt moon)
-  ; Vector, Vector -> Vector
-  ; account for gravitational effects of the moon
-  ; !!!
-  (satellite-acc rkt))
 
 
 
