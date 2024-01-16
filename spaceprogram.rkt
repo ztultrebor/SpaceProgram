@@ -44,8 +44,8 @@
 
 (define WIDTH 1400)
 (define HEIGHT 750)
-(define EARTHRADIUS 30)
-(define MOONRADIUS 15)
+(define EARTHRADIUS #i30)
+(define MOONRADIUS #i15)
 (define ORIGIN (make-vector (quotient WIDTH 2) (quotient HEIGHT 2)))
 (define EARTHGRAVITY 100)  ;; grav field strength due to earth mass
 (define MOONGRAVITY (* 0.0123 EARTHGRAVITY)) ;; grav field strength due to moon mass
@@ -55,8 +55,8 @@
 (define EARTH (circle EARTHRADIUS "solid" "blue"))
 (define MOON (circle MOONRADIUS "solid" "grey"))
 (define SPACECRAFT  (polygon
-                     (list (make-posn 0 0)  (make-posn 6 3)
-                           (make-posn 0 -18) (make-posn -6 3))
+                     (list (make-posn #i0 #i0)  (make-posn #i6 #i3)
+                           (make-posn #i0 #i-18) (make-posn #i-6 #i3))
                      "solid" "red"))
 (define BOOM! (overlay
                (radial-star 16 8 16 "solid" "orange")
@@ -246,8 +246,7 @@
   ;; Vector -> Number
   ;; normalizes the length of a vector in cartesian space
   (sqrt (+ (expt (vector-x vec) 2)
-           (expt (vector-y vec) 2)
-           1e-120))) ;; some bug in finding the roots of  numbers?
+           (expt (vector-y vec) 2))))
 ;; checks
 (check-within (normalize (make-vector 0 0)) 0 1e-10)
 (check-within (normalize (make-vector 12 5)) 13 1e-10)
